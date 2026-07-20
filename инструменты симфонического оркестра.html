@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>🎼 Оркестр - Игра</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            text-align: center;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+        }
+        h1 { color: #667eea; margin-bottom: 10px; }
+        .instruction {
+            background: #f0f4ff;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        .categories {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .category {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            border: 3px solid #667eea;
+            min-height: 200px;
+        }
+        .category h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+        .items-pool {
+            background: #fff3cd;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+        }
+        .item {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.3s;
+        }
+        .item:hover { transform: scale(1.05); }
+        .item.selected { background: #28a745; box-shadow: 0 0 10px #28a745; }
+        .item.correct { background: #28a745; }
+        .item.incorrect { background: #dc3545; }
+        .btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.2em;
+            border-radius: 25px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        .btn:hover { background: #5568d3; transform: translateY(-2px); }
+        .result {
+            background: #d4edda;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            font-size: 1.3em;
+        }
+        .stats {
+            background: #e7f3ff;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 1.2em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎼 Волшебный оркестр 🎻</h1>
+        <p>Распредели инструменты по группам!</p>
+        
+        <div class="instruction">
+            <h3>📋 Как играть:</h3>
+            <ol>
+                <li>Нажмите на инструмент внизу</li>
+                <li>Нажмите на категорию, куда его нужно поместить</li>
+                <li>Проверьте себя кнопкой "Проверить"</li>
+            </ol>
+        </div>
+
+        <div class="stats">
+            <strong>📊 Размещено инструментов:</strong> <span id="placed">0</span> из <span id="total">0</span>
+        </div>
+
+        <div class="categories" id="categories">
+            <div class="category" data-cat="strings" onclick="selectCategory('strings')">
+                <h3>🎻 Струнные смычковые</h3>
+                <div id="cat-strings"></div>
+            </div>
+            <div class="category" data-cat="woodwinds" onclick="selectCategory('woodwinds')">
+                <h3>🎺 Деревянные духовые</h3>
+                <div id="cat-woodwinds"></div>
+            </div>
+            <div class="category" data-cat="brass" onclick="selectCategory('brass')">
+                <h3>🎺 Медные духовые</h3>
+                <div id="cat-brass"></div>
+            </div>
+            <div class="category" data-cat="percussion-pitched" onclick="selectCategory('percussion-pitched')">
+                <h3>🥁 Ударные с высотой звука</h3>
+                <div id="cat-percussion-pitched"></div>
+            </div>
+            <div class="category" data-cat="percussion-unpitched" onclick="selectCategory('percussion-unpitched')">
+                <h3>🥁 Ударные без высоты звука</h3>
+                <div id="cat-percussion-unpitched"></div>
+            </div>
+            <div class="category" data-cat="others" onclick="selectCategory('others')">
+                <h3>🎹 Украшающие</h3>
+                <div id="cat-others"></div>
+            </div>
+        </div>
+
+        <h3>🎵 Инструменты:</h3>
+        <div class="items-pool" id="pool"></div>
+
+        <button class="btn" onclick="checkAnswers()">✓ Проверить ответы</button>
+        <button class="btn" onclick="restartGame()" style="background:#f5576c">🔄 Заново</button>
+
+        <div id="result"></div>
+    </div>
+
+    <script>
+        const instruments = [
+            {name: "Скрипки (30)", cat: "strings"},
+            {name: "Альты (12)", cat: "strings"},
+            {name: "Виолончели (10)", cat: "strings"},
+            {name: "Контрабасы (8)", cat: "strings"},
+            {name: "Флейты (2)", cat: "woodwinds"},
+            {name: "Гобои (2)", cat: "woodwinds"},
+            {name: "Кларнеты (2)", cat: "woodwinds"},
+            {name: "Фаготы (2)", cat: "woodwinds"},
+            {name: "Валторны (4)", cat: "brass"},
+            {name: "Трубы (2)", cat: "brass"},
+            {name: "Тромбоны (3)", cat: "brass"},
+            {name: "Туба", cat: "brass"},
+            {name: "Литавры (4)", cat: "percussion-pitched"},
+            {name: "Колокольчики", cat: "percussion-pitched"},
+            {name: "Колокола", cat: "percussion-pitched"},
+            {name: "Ксилофон", cat: "percussion-pitched"},
+            {name: "Малый барабан", cat: "percussion-unpitched"},
+            {name: "Большой барабан", cat: "percussion-unpitched"},
+            {name: "Треугольник", cat: "percussion-unpitched"},
+            {name: "Тамбурин", cat: "percussion-unpitched"},
+            {name: "Тарелки", cat: "percussion-unpitched"},
+            {name: "Там-там", cat: "percussion-unpitched"},
+            {name: "Кастаньеты", cat: "percussion-unpitched"},
+            {name: "Арфа", cat: "others"},
+            {name: "Челеста", cat: "others"},
+            {name: "Орган", cat: "others"}
+        ];
+
+        let selectedInstrument = null;
+        let placedInstruments = {};
+        let instrumentElements = {};
+        let shuffledInstruments = [];
+
+        // Функция перемешивания массива
+        function shuffleArray(array) {
+            const newArray = [...array];
+            for (let i = newArray.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+            }
+            return newArray;
+        }
+
+        function initGame() {
+            const pool = document.getElementById('pool');
+            pool.innerHTML = '';
+            document.querySelectorAll('.category div[id^="cat-"]').forEach(div => div.innerHTML = '');
+            document.getElementById('result').innerHTML = '';
+            placedInstruments = {};
+            instrumentElements = {};
+            selectedInstrument = null;
+            
+            document.getElementById('total').textContent = instruments.length;
+            document.getElementById('placed').textContent = '0';
+            
+            // Перемешиваем инструменты случайным образом
+            shuffledInstruments = shuffleArray(instruments);
+            
+            shuffledInstruments.forEach((inst, idx) => {
+                const div = document.createElement('div');
+                div.className = 'item';
+                div.textContent = inst.name;
+                div.onclick = () => selectInstrument(inst, div);
+                div.id = 'inst-' + idx;
+                instrumentElements[inst.name] = div;
+                pool.appendChild(div);
+            });
+        }
+
+        function selectInstrument(inst, element) {
+            document.querySelectorAll('.item').forEach(i => i.classList.remove('selected'));
+            if (element && !element.parentElement.id.startsWith('cat-')) {
+                element.classList.add('selected');
+                selectedInstrument = inst;
+            }
+        }
+
+        function selectCategory(cat) {
+            if (!selectedInstrument) {
+                alert('Сначала выберите инструмент из нижнего списка!');
+                return;
+            }
+            
+            if (placedInstruments[selectedInstrument.name]) {
+                alert('Этот инструмент уже размещён!');
+                return;
+            }
+            
+            const catDiv = document.getElementById('cat-' + cat);
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'item';
+            itemDiv.textContent = selectedInstrument.name;
+            itemDiv.style.background = '#28a745';
+            itemDiv.id = 'placed-' + selectedInstrument.name.replace(/\s/g, '-');
+            catDiv.appendChild(itemDiv);
+            
+            if (instrumentElements[selectedInstrument.name]) {
+                instrumentElements[selectedInstrument.name].style.display = 'none';
+            }
+            
+            placedInstruments[selectedInstrument.name] = cat;
+            
+            const placedCount = Object.keys(placedInstruments).length;
+            document.getElementById('placed').textContent = placedCount;
+            
+            selectedInstrument = null;
+            document.querySelectorAll('.item').forEach(i => i.classList.remove('selected'));
+        }
+
+        function checkAnswers() {
+            const placedCount = Object.keys(placedInstruments).length;
+            
+            if (placedCount === 0) {
+                alert('Сначала разместите хотя бы один инструмент!');
+                return;
+            }
+            
+            let correct = 0;
+            
+            for (let name in placedInstruments) {
+                const inst = instruments.find(i => i.name === name);
+                const placedCat = placedInstruments[name];
+                const placedElement = document.getElementById('placed-' + name.replace(/\s/g, '-'));
+                
+                if (inst && placedCat === inst.cat) {
+                    correct++;
+                    if (placedElement) {
+                        placedElement.classList.add('correct');
+                        placedElement.style.background = '#28a745';
+                    }
+                } else {
+                    if (placedElement) {
+                        placedElement.classList.add('incorrect');
+                        placedElement.style.background = '#dc3545';
+                    }
+                }
+            }
+            
+            const percent = Math.round((correct / instruments.length) * 100);
+            let msg = '';
+            let emoji = '';
+            
+            if (percent === 100) {
+                emoji = '🎊🌟';
+                msg = 'Великолепно! Ты настоящий дирижёр! Все инструменты на своих местах!';
+            } else if (percent >= 80) {
+                emoji = '👏🎵';
+                msg = 'Отличная работа! Почти всё правильно!';
+            } else if (percent >= 60) {
+                emoji = '👍🎼';
+                msg = 'Хороший результат! Но есть куда расти.';
+            } else if (percent >= 40) {
+                emoji = '🎶';
+                msg = 'Не сдавайся! Попробуй ещё раз!';
+            } else {
+                emoji = '🌈🎵';
+                msg = 'Продолжай учиться! Каждая попытка делает тебя лучше!';
+            }
+            
+            document.getElementById('result').innerHTML = 
+                '<div class="result">' + emoji + '<br><strong>' + msg + '</strong><br><br>Правильно: <strong>' + correct + '</strong> из <strong>' + instruments.length + '</strong><br>(' + percent + '%)</div>';
+            
+            // Прокрутка к результату
+            document.getElementById('result').scrollIntoView({behavior: 'smooth'});
+        }
+
+        function restartGame() {
+            initGame();
+        }
+
+        window.onload = initGame;
+    </script>
+</body>
+</html>
